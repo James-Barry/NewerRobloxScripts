@@ -11,107 +11,107 @@ V3, CF, CA, C3, UD = Vector3.new, CFrame.new, CFrame.Angles, Color3.new, UDim2.n
 d = function (a,b) return (a-b).magnitude end
 
 function Part(par,siz,cf,anch,col,trans)
-        local p = Instance.new("Part",par)
-        p.formFactor = "Custom"
-        p.Size = siz
-        p.Anchored = true
-        p.Color = col
-        p.Transparency = trans
-        p.Position = V3(0,1984,0)
-        p.CFrame = cf
-        return p
+	local p = Instance.new("Part",par)
+	p.formFactor = "Custom"
+	p.Size = siz
+	p.Anchored = true
+	p.Color = col
+	p.Transparency = trans
+	p.Position = V3(0,1984,0)
+	p.CFrame = cf
+	return p
 end
 
 function WeldPart(p0,siz,relcf,col,trans)
-        local p = Instance.new("Part",p0)
-        p.formFactor = "Custom"
-        p.Size = siz
-        p.Anchored = false
-        p.Color = col
-        p.Transparency = trans
-        p.Position = V3(0,1984,0)
-		p.CanCollide = false
-        p.CFrame = p0.CFrame
-		--
-		local wld = Instance.new("Weld", p0)
-        wld.Part0 = p0
-        wld.Part1 = p
-        wld.C0 = relcf
-        return p
+	local p = Instance.new("Part",p0)
+	p.formFactor = "Custom"
+	p.Size = siz
+	p.Anchored = false
+	p.Color = col
+	p.Transparency = trans
+	p.Position = V3(0,1984,0)
+	p.CanCollide = false
+	p.CFrame = p0.CFrame
+	--
+	local wld = Instance.new("Weld", p0)
+	wld.Part0 = p0
+	wld.Part1 = p
+	wld.C0 = relcf
+	return p
 end
 
 function Frame(par, name, siz, pos, col, trans)
-        fr = Instance.new("Frame")
-        fr.Parent = par
-        fr.Size = siz
-        fr.Position = pos
-        fr.BackgroundColor3 = col
-        fr.BackgroundTransparency = trans
-        fr.ClipsDescendants = true
-        fr.Name = "Skies"
-        return fr
+	fr = Instance.new("Frame")
+	fr.Parent = par
+	fr.Size = siz
+	fr.Position = pos
+	fr.BackgroundColor3 = col
+	fr.BackgroundTransparency = trans
+	fr.ClipsDescendants = true
+	fr.Name = "Skies"
+	return fr
 end
 
 function ScrollingFrame(par, name, siz, pos, col, trans)
-        fr = Instance.new("ScrollingFrame")
-        fr.Parent = par
-        fr.Size = siz
-        fr.Position = pos
-        fr.BackgroundColor3 = col
-        fr.BackgroundTransparency = trans
-        fr.ClipsDescendants = true
-        fr.Name = "Skies"
-        return fr
+	fr = Instance.new("ScrollingFrame")
+	fr.Parent = par
+	fr.Size = siz
+	fr.Position = pos
+	fr.BackgroundColor3 = col
+	fr.BackgroundTransparency = trans
+	fr.ClipsDescendants = true
+	fr.Name = "Skies"
+	return fr
 end
 
 function ImageB(par, name, siz, pos, col, img, trans)
-        fr = Instance.new("ImageButton")
-        fr.Parent = par
-        fr.Size = siz
-        fr.Position = pos
-        fr.BackgroundColor3 = col
-        fr.Image = img
-        fr.BackgroundTransparency = trans
-        fr.Name = "Skies"
-        fr.AutoButtonColor = false
-        return fr
+	fr = Instance.new("ImageButton")
+	fr.Parent = par
+	fr.Size = siz
+	fr.Position = pos
+	fr.BackgroundColor3 = col
+	fr.Image = img
+	fr.BackgroundTransparency = trans
+	fr.Name = "Skies"
+	fr.AutoButtonColor = false
+	return fr
 end
 
 function ImageL(par, name, siz, pos, col, img, trans)
-        fr = Instance.new("ImageLabel")
-        fr.Parent = par
-        fr.Size = siz
-        fr.Position = pos
-        fr.BackgroundColor3 = col
-        fr.Image = img
-        fr.BackgroundTransparency = trans
-        fr.Name = name
-        return fr
+	fr = Instance.new("ImageLabel")
+	fr.Parent = par
+	fr.Size = siz
+	fr.Position = pos
+	fr.BackgroundColor3 = col
+	fr.Image = img
+	fr.BackgroundTransparency = trans
+	fr.Name = name
+	return fr
 end
 
 function TextB(par, name, siz, pos, col, txt, trans)
-        fr = Instance.new("TextButton")
-        fr.Parent = par
-        fr.Size = siz
-        fr.Position = pos
-        fr.BackgroundColor3 = col
-        fr.Text = txt
-        fr.BackgroundTransparency = trans
-        fr.Name = "Skies"
-        fr.AutoButtonColor = false
-        return fr
+	fr = Instance.new("TextButton")
+	fr.Parent = par
+	fr.Size = siz
+	fr.Position = pos
+	fr.BackgroundColor3 = col
+	fr.Text = txt
+	fr.BackgroundTransparency = trans
+	fr.Name = "Skies"
+	fr.AutoButtonColor = false
+	return fr
 end
 
 function TextL(par, name, siz, pos, col, txt, trans)
-        fr = Instance.new("TextLabel")
-        fr.Parent = par
-        fr.Size = siz
-        fr.Position = pos
-        fr.BackgroundColor3 = col
-        fr.Text = txt
-        fr.BackgroundTransparency = trans
-        fr.Name = name
-        return fr
+	fr = Instance.new("TextLabel")
+	fr.Parent = par
+	fr.Size = siz
+	fr.Position = pos
+	fr.BackgroundColor3 = col
+	fr.Text = txt
+	fr.BackgroundTransparency = trans
+	fr.Name = name
+	return fr
 end
 
 
@@ -199,10 +199,10 @@ end
 
 
 --[[ 
-	Dear self,
+Dear self,
 EVERYTHING IS HARD ON THE COMPUTER.
 STOP TRYING TO OPTIMIZE EVERYTHING.
-	~past self
+~past self
 ]]
 
 function getMdlMass(mdl) 
@@ -237,7 +237,7 @@ local mods = {}
 --			end
 		end
 	end
-return ps, mods -- If your workspaces keeps a sane structure, this should work excellently
+return ps, mods -- If your workspace keeps a sane structure, this should work excellently
 end
 
 function getNumDes(thing)
