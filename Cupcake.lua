@@ -40,9 +40,9 @@ end
 
 
 function getNearNormal(pt, cf) -- more complicated than nesc? Prolly, yeah. This is for brick-shaped parts, spheres are easy.
-		-- returns something _like_ the normal nearest to cf, might not work at corners.
-		-- it really returns the _direction_ of the normal, not the magnitude.
-	local vdif = cf:toObjectSpace(pt.CFrame)
+	-- returns something _like_ the normal nearest to cf, might not work at corners.
+	-- it really returns the _direction_ of the normal, not the magnitude.
+	local vdif = pt.CFrame:toObjectSpace(cf)
 	local siz = pt.Size
 	local x,y,z = siz.X,siz.Y,siz.Z -- just more inefficiencies?
 	local x2,y2,z2 = vdif.X,vdif.Y,vdif.Z
@@ -52,34 +52,36 @@ function getNearNormal(pt, cf) -- more complicated than nesc? Prolly, yeah. This
 	local a = {math.abs(y2)*2/y, math.abs(z2)*2/z}
 	for i,v in ipairs(a) do -- not as efficient as a bunch of ifs?
 		if v < temp then
-		key = i
-		temp = v
+			key = i
+			temp = v
 		end
 	end
 	local cn = CF(0,0,0)
-	if key == 0 then 
-	cn = CF(vdif.X,0,0) -- That work???
-	elseif key == 1 then 
-	cn = CF(0,vdif.Y,0)
-	elseif key == 2 then 
-	cn = CF(0,0,vdif.Z)	
+	if key == 0 then
+		cn = CA(0,math.rad(90),0)
+	elseif key == 1 then
+		cn = CA(0,0,0)
+	elseif key == 2 then
+		cn = CA(math.rad(90),0,0)
 	end
 	--for debugging
 	local nwpt = part(pt,V3(.1,.1,4),pt.CFrame*cn*CF(0,0,2),true,C3(1,0,0),"Plastic",false) -- Size should depend on original size.
 	db(nwpt, 3)
 	--for debugging
-	return pt.CFrame:toWorldSpace(cn)
+	return cn:toWorldSpace(pt.CFrame)
 end
 
 function shadowAndSplat(pt,shadowCol,shadowTime) -- So that you can use this for other things 
 	local inAir = true
 	pt.Touched:connect(function (pt2)
 		-- splat here
+		if pt2.Parent ~= pt then
 			-- Direction of the cyl's top = some fn of the rel. vel and rel. position/size?
-			oldcf = pt.CFrame
-			dir = getNearNormal(pt2,oldcf)
-			nwpt = part(pt,V3(4,.1,4),CF(oldcf.p)*CA(0,math.rad(90),0)*dir,true,pt.Color,"Plastic",false) -- Size should depend on original size.
+			local oldcf = pt.CFrame
+			local dir = getNearNormal(pt2,oldcf)
+			local nwpt = part(pt,V3(4,.1,4),dir*CA(0,math.rad(90),0),true,pt.Color,"Plastic",false) -- Size should depend on original size.
 			-- weld to the hit part?
+		end
 		inAir = false
 	end)
 	local lastpos = pt.Position
@@ -100,9 +102,9 @@ function cupcake(cf,velocity)
 	cc = Instance.new("Color3Value",mdl)
 	cc.Value = cupc
 	p1 = part(mdl,V3(1,1,1),cf,false,cupc, "Plastic", true) -- base
---	fl = fileMesh(p1,V3(.3,.3,.3),"")
+	--	fl = fileMesh(p1,V3(.3,.3,.3),"")
 	p2 = part(mdl,V3(1,1,1),cf,false,cupc, "Plastic", false) -- top
---	fl = fileMesh(p2,V3(.3,.3,.3),"")
+	--	fl = fileMesh(p2,V3(.3,.3,.3),"")
 	weld(p1,p2,CF(0,0.3,0))
 	p1.Velocity = cf.lookVector*velocity
 	p2.Velocity = cf.lookVector*velocity
@@ -113,13 +115,13 @@ end
 
 hb = Instance.new("HopperBin",ply.Backpack)
 hb.Selected:connect(function (mouse)
-position1 = char.Head.Position
+	position1 = char.Head.Position
 
 	mouse.Button1Down:connect(function()
 		position1 = mouse.hit.p
 		go = part(cam,V3(1,1,1),CF(position1),true,C3(0,1,1),"Plastic",false)
 	end)
-	
+
 	mouse.Move:connect(function ()
 		if go and mouse.Target then
 			mp2 = mouse.hit.p
