@@ -8,8 +8,22 @@ cam:clearAllChildren() -- just for now?
 t = char.Torso
 mr = math.random
 V3, CF, CA, C3, UD = Vector3.new, CFrame.new, CFrame.Angles, Color3.new, UDim2.new
+V2 = Vector2.new
 ss = string.sub
+sl = string.len
+sb = string.byte
+sc = string.char
+gs = string.gsub
+gm = string.gmatch
 d = function (a,b) return (a-b).magnitude end
+
+currentDir = game
+lastCommands = {[[print("testing")]],[[print(self)]],[[cd game]],[[ls -r2]],[[netstat]],[[mkdir]],[[rm big*]]}
+cmPos = #lastCommands+1
+
+--[[--------------------------------------------------
+Super basic functions
+------------------------------------------------------]]
 
 function Part(par,siz,cf,anch,col,trans)
 	local p = Instance.new("Part",par)
@@ -214,13 +228,23 @@ end
 
 function propertyGui(obj, fr)
 	local myps = getProperties(obj)
-	local newfr = Frame(fr, "Expl", UD(1,0,1,12), UD(0,0,0,0), C3(0,0,0), 1) 
+	local newfr = Frame(fr, "Expl", UD(1,0,1,12), UD(0,0,0,0), C3(0,0,0), 1)
 	for i,v in ipairs(myps) do
 		local tl1 = TextL(newfr, "txt", UD(1,-15,0,12), UD(0,0,0,i*12), C3(1,1,1), tostring(v), 1)
 		tl1.TextColor3 = C3(1,1,0)
 		tl1.TextXAlignment = 0
-		local tl2 = TextL(newfr, "txt", UD(1,-15,0,12), UD(0,0,0,i*12), C3(1,1,1), tostring(obj[v]), 1)
-		tl2.TextColor3 = C3(1,1,1)
+		local t2txt = tostring(obj[v])
+		local tl2 = nil
+		if sl(t2txt) > 24 then
+			tl2 = TextB(newfr, "txt", UD(1,-15,0,12), UD(0,0,0,i*12), C3(1,1,1), ss(t2txt,1,24).."...", 1)
+			tl2.TextColor3 = C3(1,.7,.7)
+			tl2.MouseButton1Down:connect(function()
+				vimWin(tostring(obj[v]), mainfr4, nil)
+			end)
+		else
+			tl2 = TextL(newfr, "txt", UD(1,-15,0,12), UD(0,0,0,i*12), C3(1,1,1), tostring(obj[v]), 1)
+			tl2.TextColor3 = C3(1,1,1)
+		end
 		tl2.TextXAlignment = 1
 		-- TextEdit instead?
 	end
@@ -229,109 +253,131 @@ end
 
 --[[ End properties]]
 
---[[ Basic text-edit functions ]]
+--[[--------------------------------------------------
+Custom text
+------------------------------------------------------]]
 
--- these things aren't local for each vimwin right now, but they should be
-czstack = {} 
-custack = {} -- the ctrl+z/u-able strings, starts with either + or - 
-registers = {} -- key = key, value = macro (table of keydowns)
+FontSizeX = 10.1
+FontSizeY = 19
 
-local function moveCursor(cursor, vimWin, oldpos, newstrpos) -- TODO
-	--if oldpos and shift-down, add to the selected string 
-	cursor.Position = newstrpos
-	return
+local symbs = [[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890[]{}/?=+\|-_;:!@#$%^&*(),<.>~` '"_________]]
+symtab = {}
+for i=1,sl(symbs) do
+	table.insert(symtab,ss(symbs,i,i))
 end
 
-local function deleteVimLine(vimWindow, lineNumber) -- test
-	if vimWindow:findFirstChild("t"..lineNumber) then
-		vimWindow["t"..lineNumber]:remove()
-		for i,v in ipairs() do
-		local k = tonumber(ss(v.Name,2))
-			if k > lineNumber then
-			v.Position = v.Position + UDim2.new(0,0,0,-12)
-			v.Name = "t"..(k-1)
+
+function makeCustomTxt(txt, par, name, siz, pos, col, trans)
+	-- returns tbl of frames and lines: eachln = tbl of words, eachwd = tbl of refs to the imgLabels
+	local frs = {}
+	local lns = {}
+	local iter = 0
+	for v in gm(txt,"[^\n]*") do
+		iter = iter +1
+		local a,b = makeCustomLine(v,par, name, siz, pos+UD(0,0,0,FontSizeY*iter/2), col, trans)
+		table.insert(frs,a)
+		table.insert(lns,b)
+	end
+	return frs, lns
+end
+
+function makeCustomLine(txt, par, name, siz, pos, col, trans)
+	-- returns tbl of words, each = tbl of refs to the imgLabels
+	local fr = Frame(par, name, siz, pos, col, trans)
+	local iter2 = 1
+	local tblb = {}
+	for w in gm(txt,"%s?[^%s]+") do
+	local tbl = {}
+	for s in gm(w,"\ ") do
+	-- add 'real' spaces?
+		local im = ImageL(fr,name,UD(0,FontSizeX,0,FontSizeY),UD(0,iter2*FontSizeX,0,0),col,"",trans)
+		im.BorderSizePixel = 0
+		iter2 = iter2+1
+		table.insert(tbl,im)
+	end
+	w = gs(w,"%s","")
+	if w == "function" or w == "end" or w == "if" or w == "for" or w == "then" or w == "local" or w == "return" then
+	local im2 = ImageL(fr,name,UD(0,FontSizeX*sl(w),0,FontSizeY),UD(0,iter2*FontSizeX,0,0),col,"rbxassetid://135915888",trans)
+		im2.BorderSizePixel = 0
+		im2.ImageTransparency = .7
+	end
+		for v in gm(w,".") do
+			if v == "\n" then
+			break -- yeh?
 			end
+			local im = ImageL(fr,name,UD(0,FontSizeX,0,FontSizeY),UD(0,iter2*FontSizeX,0,0),col,"rbxassetid://314215802",trans)
+			iter2 = iter2+1
+			im.BorderSizePixel = 0
+			im.ImageRectSize = V2(FontSizeX,FontSizeY)
+			for i = 0,#symtab-1 do
+				if v == symtab[i+1] then
+				im.ImageRectOffset = V2(FontSizeX*(i%26),FontSizeY*(math.floor((i+1)/26)))
+				end
+			end
+			table.insert(tbl,im)
 		end
+	table.insert(tblb,tbl) --> what I meant to say was "PTHBHTBBT!!!11!1one!1!" =P
+	--if special word, add syntax highlighting to background
 	end
-end
-
-function undo() 
-	if #czstack>0 then
-	-- move to the custack
-	end
-end
-
-function redo()
-	if #custack>0 then
-	-- move to the czstack
-	end	
-end
-
-function openLine()
-	--
+	return fr,tblb
 end
 
 
-function highlight(start, fin) 	-- start/fin inclusive
-	--	
-end
+--[[--------------------------------------------------
+A bunch of options and gui bits
+------------------------------------------------------]]
 
---[[ End general text-edit functions]]
+options = {numbers = true, rnu = false, syntax = lua}
 
---[[ other vim functions ]]
-options = {numbers = true, rnu = false, syntax = lua} 
+main = Part(cam, V3(5,5,5), CFrame.new((cam.CoordinateFrame*CF(0,0,-.5)).p), true, C3(.2,.5,.6), .5)
+	main.CanCollide = false
+	main.TopSurface = 0
 
+sg = Instance.new("SurfaceGui",ply.PlayerGui) -- .RoVimrc
+	sg.Adornee = main
+	sg.Face = "Top"
+	sg.CanvasSize = Vector2.new(dist,dist) -- tweak me?
+	mainfr = Frame(sg, "RoVimrcWin", UD(1,0,1,0), UD(0,0,0,0), C3(0,0,0), 1)
 
+sg2 = Instance.new("SurfaceGui",ply.PlayerGui) -- explorer window
+	sg2.Adornee = main
+	sg2.Face = "Front"
+	sg2.CanvasSize = Vector2.new(500,500) -- tweak me?
+	mainfr2 = ScrollingFrame(sg2, "Expl", UD(.5,0,3,0), UD(0,0,0,0), C3(0,0,0), 1)
 
-angle = CA(0,0,0)
-main = Part(cam, V3(5,5,5), CFrame.new((cam.CoordinateFrame*CF(0,0,-.5)).p)*angle, true, C3(.2,.5,.6), .5)
-main.CanCollide = false
-main.TopSurface = 0
+sg3 = Instance.new("SurfaceGui",ply.PlayerGui) -- RoVim
+	sg3.Adornee = main
+	sg3.Face = "Left"
+	sg3.CanvasSize = Vector2.new(500,500) -- tweak me?
+	mainfr3 = Frame(sg3, "RoVimWin", UD(1,0,1,0), UD(0,0,0,0), C3(0,0,0), 1)
 
-sg = Instance.new("SurfaceGui",ply.PlayerGui) -- for RoVimrc
-sg.Adornee = main
-sg.Face = "Top"
-sg.CanvasSize = Vector2.new(dist,dist) -- tweak me?
-mainfr = Frame(sg, "Expl", UD(1,0,3,0), UD(0,0,0,0), C3(0,0,0), 1)
+sg4 = Instance.new("SurfaceGui",ply.PlayerGui) -- other text
+	sg4.Adornee = main
+	sg4.Face = "Right"
+	sg4.CanvasSize = Vector2.new(500,500) -- tweak me?
+	mainfr4 = Frame(sg4, "RoVimWin2", UD(1,0,1,0), UD(0,0,0,0), C3(0,0,0), 1)
 
-sg2 = Instance.new("SurfaceGui",ply.PlayerGui)
-sg2.Adornee = main
-sg2.Face = "Front"
-sg2.CanvasSize = Vector2.new(500,500) -- tweak me?
+	
+explcols = {C3(.8,.8,.8),C3(1,.5,.5),C3(0,1,1),C3(0,1,0.5)}
+expltype = {"Part","Model","Script","LocalScript"}
+--explfns = {{properties, v, mainfr3},{properties, v, mainfr3},{vimWin, Source, mainfr3, nil},{vimWin, Source, mainfr3, nil}}
 
-mainfr2 = ScrollingFrame(sg2, "Expl", UD(.5,0,3,0), UD(0,0,0,0), C3(0,0,0), 1)
+local tb = TextB(mainfr2, "txt", UD(1,0,1,0), UD(0,0,0,0), C3(1,1,1), "Explorer", 1)
+tb.TextColor3 = C3(0.5,1,1)
+tb.TextXAlignment = 2
+tb.TextYAlignment = 0
 
-sg3 = Instance.new("SurfaceGui",ply.PlayerGui)
-sg3.Adornee = main
-sg3.Face = "Left"
-sg3.CanvasSize = Vector2.new(500,500) -- tweak me?
+mainprops = Frame(sg2, "Properties", UD(0.5,0,1,0), UD(.5,0,0,0), C3(.5,.5,.5), 0.5)
 
-mainfr3 = ScrollingFrame(sg3, "Expl2", UD(1,0,1,20), UD(0,0,0,0), C3(0,0,0), 1)
+selected = nil
+selectedProps = nil
+selectedGui = nil
 
-sg4 = Instance.new("SurfaceGui",ply.PlayerGui)
-sg4.Adornee = main
-sg4.Face = "Right"
-sg4.CanvasSize = Vector2.new(500,500) -- tweak me?
+--[[--------------------------------------------------
+Explorer functions
+------------------------------------------------------]]
 
-mainfr4 = ScrollingFrame(sg4, "VimWin2", UD(1,0,1,20), UD(0,0,0,0), C3(0,0,0), 1)
-
---[[ 
-Dear self,
-EVERYTHING IS HARD ON THE COMPUTER.
-STOP TRYING TO OPTIMIZE EVERYTHING.
-~past self
-]]
-
-function getMdlMass(mdl) 
-	local mss = 0
-	local pts = recurseForParts(mdl, 0, false, 10000)
-	for i,v in ipairs(pts) do
-		mss = mss+v:GetMass()
-	end
-	return mss
-end
-
-function recurseForParts(m, min, trackMods, max) 
+function recurseForParts(m, min, trackMods, max)
 	local ps = {}
 	local mods = {}
 	if m.className == "Part" then
@@ -341,17 +387,10 @@ function recurseForParts(m, min, trackMods, max)
 		if v.className == "Part" then --and v:GetMass() > min then
 			table.insert(ps,v)
 		elseif v.className == "Model" then
-			--		local k = getMdlMass(v)
-			--			if k > min then
-			--				if trackMods and k < max then
-			--				table.insert(mods,v)
-			--				else
 			local temp = recurseForParts(v, min, trackMods, max)
 			for i2,v2 in ipairs(temp) do
 				table.insert(ps,v2)
 			end
-			--			end
-			--			end
 		end
 	end
 	return ps, mods -- If your workspaces keeps a sane structure, this should work excellently
@@ -365,24 +404,6 @@ function getNumDes(thing)
 	return count
 end
 
-function simpleExplore(obj,depth)
-	local st = obj.Name
-	for i,v in ipairs(obj:getChildren()) do
-		st = st.."\n"..string.rep("\t",depth)
-		st = st..simpleExplore(v,depth+1)
-	end
-	return st
-end
-
-
-explcols = {C3(.8,.8,.8),C3(1,.5,.5),C3(0,1,1),C3(0,1,0.5)}
-expltype = {"Part","Model","Script","LocalScript"}
---explfns = {{properties, v, mainfr3},{properties, v, mainfr3},{vimWin, Source, mainfr3, nil},{vimWin, Source, mainfr3, nil}}
-
-selected = nil
-selectedProps = nil
-selectedGui = nil
-
 function explore(obj, fr, shift, propwindow) -- doesn't deal with deletions/insertions yet.
 	local tbl = {}
 	local mv = UD(0,0,0,#obj:getChildren()*12)
@@ -392,7 +413,7 @@ function explore(obj, fr, shift, propwindow) -- doesn't deal with deletions/inse
 	--
 	for i,v in ipairs(obj:getChildren()) do
 		local a = nil
-		local newfr = Frame(fr, "Expl", UD(1,-15,1,-i*12), UD(0,15,0,i*12), C3(0,0,0), 1) 
+		local newfr = Frame(fr, "Expl", UD(1,-15,1,-i*12), UD(0,15,0,i*12), C3(0,0,0), 1)
 		-- or ScrollingFrame if tbl is bigger than 'max'
 		local tb = TextB(newfr, "txt", UD(1,0,0,12), UD(0,0,0,0), C3(1,1,1), v.Name, 1)
 		tb.TextColor3 = C3(1,1,1)
@@ -409,7 +430,7 @@ function explore(obj, fr, shift, propwindow) -- doesn't deal with deletions/inse
 				if v.ClassName == "LocalScript" and v:findFirstChild("OpenSource") ~= nil then
 					vimWin(v.OpenSource.Value, mainfr3, nil) --OpenSource.Value
 					-- nml script will pr'bly have metatable set so that Source can't be seen.
-					-- Is testing vimWin is a heinous crime? 
+					-- Is testing vimWin is a heinous crime?
 					-- prob's. :(.
 					-- am bad human person.
 				end
@@ -462,90 +483,134 @@ end
 
 
 
-function vimCollect(newfr)
-	local bigstring = ""
-	local tb = {}
-	for i,v in ipairs(newfr:getChildren()) do
-		local knm = tonumber(ss(v.Name,2))
-		-- if  then -- make sure it's a normal txtbutton
-		tb[knm] = v
-		-- end
+
+--[[--------------------------------------------------
+RoVim functions
+------------------------------------------------------]]
+
+-- these things aren't local for each vimwin right now, but they should be
+czstack = {}
+custack = {} -- the ctrl+z/u-able strings, starts with either + or -
+registers = {} -- key = key, value = macro (table of keydowns)
+myCursor = Frame(nil, "Cursor", UD(0,FontSizeX,0,FontSizeY), UD(0,0,0,0), C3(1,1,0), .2)
+
+local function moveCursor(cursor, vimWin, oldpos, newstrpos) -- TODO
+	--if oldpos and shift-down, add to the selected string
+	cursor.Position = newstrpos
+end
+
+local function deleteLine(vimFrames, vimLines, lineNumber, numberLs) --test me
+local oldframes, lines = {}, {}
+	for j=1,numberLs do
+		for i=lineNumber,#vimFrames do
+			v = vimFrames[i]
+			v.Position = v.Position + UDim2.new(0,0,0,-FontSizeY)
+		end
+		-- Add to ctrl-z list
+		vimFrames[lineNumber].Parent = nil
+		table.insert(oldframes, vimFrames[lineNumber])
+		table.insert(lines, vimLines[lineNumber])
+		table.remove(vimFrames,lineNumber)
+		table.remove(vimLines,lineNumber)
 	end
-	for i,v in ipairs(tb) do
-		bigstring = bigstring..v	
+return oldframes, lines -- for pasting back in
+end
+
+local function insertLines(vimFrames, vimLines, lineNumber, newFrames, newLines) --test me
+	for j,v in ipairs(newLines) do
+		for i=lineNumber,#vimFrames do
+			v = vimFrames[i]
+			v.Position = v.Position + UDim2.new(0,0,0,FontSizeY)
+		end
+		-- Add to ctrl-z list
+		local vmfr, ln = makeCustomLine("")
+		table.insert(vimFrames,lineNumber)
+		table.insert(vimLines,lineNumber)
 	end
-	return bigstring
+end
+
+
+function undo()
+	if #czstack>0 then
+	-- move to the custack
+	end
+end
+
+function redo()
+	if #custack>0 then
+	-- move to the czstack
+	end
+end
+
+function openLine()
+	--
+end
+
+function highlight(start, fin) 	-- start/fin inclusive
+	--
 end
 
 function vimWin(str, fr, rc)
 	fr:clearAllChildren()
 	--for now, there is no .RoVimrc that does anything
-	local newfr = Frame(fr, "RoVim", UD(1,0,1,-15), UD(0,0,0,0), C3(0,0,0), 1) 
+	local newfr = ScrollingFrame(fr, "RoVim", UD(1,0,1,-15), UD(0,0,0,0), C3(0,0,0), 1)
 	lnnum = ""
 	count = 1
-	str = "\n"..str -- for the lulz?
-	lstp = UD(0,20,0,0)
+	str = str.."\n"
+	lstp = UD(0,40,0,0)
 	lstb = nil
-	for i in string.gmatch(str, "\n[^\n]*") do
-		lnnum = lnnum..count.."\n"
-		count = count+1
-		--newfr = ""
-		-- look for & syntax-color keywords
-		-- if num then
-		local tb = TextBox(newfr, "t"..count, UD(1,0,0,12), lstp, C3(.5,.4,.5), i, 0.7)
-		tb.Font = 5 -- source sans light
-		tb.ClearTextOnFocus = false
-		tb.MultiLine = false -- Do newlines manually.
-		tb.BorderSizePixel = 0
-		tb.TextColor3 = C3(1,1,1)
-		tb.TextYAlignment = 2
-		tb.TextXAlignment = 0
-		lstp = tb.Position+UD(0,0,0,12)
+	mainfrs, mainlines = makeCustomTxt(str, newfr, "t"..count, UD(1,0,0,18), lstp, C3(.5,.4,.5), 1)
+
+	lnnum = ""
+	local iter = 1
+	for v in gm(str,"\n") do
+	lnnum = lnnum..iter.."\n"
+	iter = iter+1
 	end
-	if count < 100 then
-		for i=count,100 do
+
+	lnnum = lnnum.."~\n"
+	if count < 40 then
+		for i=count,40 do
 			lnnum = lnnum.."~\n"
 		end
 	end
-	local lineNums = TextB(newfr, "lntxt", UD(0,20,1,0), UD(0,0,0,0), C3(1,1,1), lnnum, 1)
-	lineNums.TextColor3 = C3(1,1,0)	
-	lineNums.TextYAlignment = 0
-	lineNums.TextXAlignment = 0
-	--
-	runButton = TextB(fr, "txt", UD(.25,0,0,12), UD(0.625,0,1,-12), C3(0,.7,0), "Run script", 1)
-	
-	runButton = TextB(fr, "txt", UD(.25,0,0,12), UD(0.625,0,1,-12), C3(0,.7,0), "Run script", 1)
+	makeCustomTxt(lnnum, newfr, "t"..count, UD(0,60,0,18), UD(0,0,0,0), C3(.4,.5,0), 1)
+
+	local mainButton = TextB(newfr, "main", UD(1,0,1,-12), UD(0,0,0,0), C3(0,.7,0), "", 1)
+	mainButton.MouseButton1Down:connect(function (x,y)
+		myCursor.Parent = newfr
+		-- moveCursor(position)
+		myCursor.Position = UD(0,math.floor(x/FontSizeX)*FontSizeX,0,(math.floor(y/FontSizeY-.5)+.5)*FontSizeY)
+	end)
+
+	local runButton = TextB(fr, "txt", UD(.25,0,0,12), UD(0.625,0,1,-12), C3(0,.7,0), "Run script", 0)
 	runButton.MouseButton1Down:connect(function ()
 		if NewScript then
-		NewScript(vimCollect(newfr))
+		NewScript(str)
 		end
 	end)
-	runLocalButton = TextB(fr, "txt", UD(.25,0,0,12), UD(0.125,0,1,-12), C3(0,.7,0), "Run local", 1)
-	runButton.MouseButton1Down:connect(function ()
+	runLocalButton = TextB(fr, "txt", UD(.25,0,0,12), UD(0.125,0,1,-12), C3(0,.7,0), "Run local", 0)
+	runLocalButton.MouseButton1Down:connect(function ()
 		if NewScript then
-		NewLocalScript(vimCollect(newfr))
+		NewLocalScript(str)
 		end
 	end)
 	return newfr
 end
 
-local tb = TextB(mainfr2, "txt", UD(1,0,1,0), UD(0,0,0,0), C3(1,1,1), "Explorer", 1)
-tb.TextColor3 = C3(0.5,1,1)
-tb.TextXAlignment = 2
-tb.TextYAlignment = 0
+--[[--------------------------------------------------
+Command line
+------------------------------------------------------]]
 
-mainprops = ScrollingFrame(sg2, "Properties", UD(0.5,0,1,0), UD(.5,0,0,0), C3(.5,.5,.5), 0.5)
 
-explore(game.Workspace, mainfr2, {}, mainprops)
+
+--[[--------------------------------------------------
+Starting things off
+------------------------------------------------------]]
+
+explore(workspace, mainfr2, {}, mainprops)
 
 vimWin("Hello\nWorld", mainfr3, nil)
-
--- one-time get workspace parts, and after that use DescendentAdded to update the tracked parts
-
-game:getService("RunService").RenderStepped:connect(function()
-	main.CFrame = CFrame.new((cam.CoordinateFrame*CF(0,0,-7)).p)*angle
-	-- update
-end)
 
 os = Instance.new("StringValue",script)
 os.Name = "OpenSource"
@@ -553,7 +618,7 @@ os.Value = [[
 function vimWin(str, fr, rc)
 	fr:clearAllChildren()
 	--for now, there is no .RoVimrc that does anything
-	local newfr = Frame(fr, "RoVim", UD(1,0,1,0), UD(0,0,0,0), C3(0,0,0), 1) 
+	local newfr = Frame(fr, "RoVim", UD(1,0,1,0), UD(0,0,0,0), C3(0,0,0), 1)
 	lnnum = ""
 	count = 1
 	str = "\n"..str -- for the lulz?
@@ -576,18 +641,35 @@ function vimWin(str, fr, rc)
 		end
 	end
 	local lineNums = TextB(newfr, "txt", UD(0,20,1,0), UD(0,0,0,0), C3(1,1,1), lnnum, 1)
-	lineNums.TextColor3 = C3(1,1,0)	
+	lineNums.TextColor3 = C3(1,1,0)
 	lineNums.TextYAlignment = 0
 	lineNums.TextXAlignment = 0
 	--
 	return newfr
 end
 ]]
-
-
-
---script.Source -- ie, this script's source. The http wasn't working.
+-- script.Source -- ie, this script's source. The http wasn't working.
 -- I am not doing the dirt-bag thing and looking at other scripts... quite the opposite.
+
+game:getService("RunService").RenderStepped:connect(function()
+	main.CFrame = CFrame.new((cam.CoordinateFrame*CF(0,0,-7)).p)
+	-- update
+end)
+
+while 1 do 
+myCursor.BackgroundTransparency = .2
+wait(.8) 
+myCursor.BackgroundTransparency = .8
+wait(.2)
+end
+
+
+--[[
+Dear self,
+EVERYTHING IS HARD ON THE COMPUTER.
+STOP TRYING TO OPTIMIZE EVERYTHING.
+~past self
+]]
 
 --[[----------------------------------------------------------
 Hi! I bet you're a wonderful person. Have a great life! :D
