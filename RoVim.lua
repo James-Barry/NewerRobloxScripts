@@ -271,12 +271,14 @@ function makeCustomTxt(txt, par, name, siz, pos, col, trans)
 	-- returns tbl of frames and lines: eachln = tbl of words, eachwd = tbl of refs to the imgLabels
 	local frs = {}
 	local lns = {}
+	local strlines = {}
 	local iter = 0
 	for v in gm(txt,"[^\n]*") do
 		iter = iter +1
 		local a,b = makeCustomLine(v,par, name, siz, pos+UD(0,0,0,FontSizeY*iter/2), col, trans)
 		table.insert(frs,a)
 		table.insert(lns,b)
+		table.insert(strlines, v)
 	end
 	return frs, lns
 end
@@ -499,7 +501,7 @@ local function moveCursor(cursor, vimWin, oldpos, newstrpos) -- TODO
 	cursor.Position = newstrpos
 end
 
-local function deleteLine(vimFrames, vimLines, lineNumber, numberLs) --test me
+local function deleteLines(vimFrames, vimLines, lineNumber, numberLs) --test me
 local oldframes, lines = {}, {}
 	for j=1,numberLs do
 		for i=lineNumber,#vimFrames do
@@ -529,6 +531,28 @@ local function insertLines(vimFrames, vimLines, lineNumber, newFrames, newLines)
 	end
 end
 
+local function insertString(vimLine, lineFr, vimLineStr, cursorX, newString) --test me
+	local iter = 0
+	vimLineStr = ss(vimLineStr,1,cursorX)..newLetter..ss(vimLineStr,cursorX)
+	lineFr:clearAllChildren()
+	
+	newLn = makeCustomLine()
+	-- Add to ctrl-z list
+	table.insert(vimLineStr, cursorX+1, newLetter)	
+end
+
+local function deleteLetter(vimFrames, vimLines, lineNumber, cursorX, newLetter) --test me
+	for j,v in ipairs(newLines) do
+		for i=lineNumber,#vimFrames do
+			v = vimFrames[i]
+			v.Position = v.Position + UDim2.new(0,0,0,FontSizeY)
+		end
+		local vmfr, ln = makeCustomLine("")
+		table.insert(vimFrames,lineNumber)
+		table.insert(vimLines,lineNumber)
+	end		
+	-- Add to ctrl-z list
+end
 
 function undo()
 	if #czstack>0 then
@@ -551,23 +575,26 @@ function highlight(start, fin) 	-- start/fin inclusive
 end
 
 function vimWin(str, fr, rc)
+	myCursor.Parent = nil
 	fr:clearAllChildren()
 	--for now, there is no .RoVimrc that does anything
 	local newfr = ScrollingFrame(fr, "RoVim", UD(1,0,1,-15), UD(0,0,0,0), C3(0,0,0), 1)
-	lnnum = ""
+		myCursorX = math.floor(x/FontSizeX)
+		myCursorY = math.floor(y/FontSizeY-.5) -- ehh? looks rather hacky
 	count = 1
 	str = str.."\n"
 	lstp = UD(0,40,0,0)
 	lstb = nil
-	mainfrs, mainlines = makeCustomTxt(str, newfr, "t"..count, UD(1,0,0,18), lstp, C3(.5,.4,.5), 1)
-
+	local mainfrs, mainlines, strlines = makeCustomTxt(str, newfr, "t"..count, UD(1,0,0,18), lstp, C3(.5,.4,.5), 1)
+	--
+	-- Line Numbers
 	lnnum = ""
 	local iter = 1
 	for v in gm(str,"\n") do
 	lnnum = lnnum..iter.."\n"
 	iter = iter+1
 	end
-
+	--
 	lnnum = lnnum.."~\n"
 	if count < 40 then
 		for i=count,40 do
@@ -575,23 +602,26 @@ function vimWin(str, fr, rc)
 		end
 	end
 	makeCustomTxt(lnnum, newfr, "t"..count, UD(0,60,0,18), UD(0,0,0,0), C3(.4,.5,0), 1)
-
+	-- local lfrs, llines = ^
+	--	
 	local mainButton = TextB(newfr, "main", UD(1,0,1,-12), UD(0,0,0,0), C3(0,.7,0), "", 1)
 	mainButton.MouseButton1Down:connect(function (x,y)
 		myCursor.Parent = newfr
 		-- moveCursor(position)
-		myCursor.Position = UD(0,math.floor(x/FontSizeX)*FontSizeX,0,(math.floor(y/FontSizeY-.5)+.5)*FontSizeY)
+		myCursorX = math.floor(x/FontSizeX)
+		myCursorY = math.floor(y/FontSizeY-.5) -- ehh? looks rather hacky
+		myCursor.Position = UD(0,cursorX*FontSizeX,0,(myCursorY+.5)*FontSizeY)
 	end)
-
+	--
 	local runButton = TextB(fr, "txt", UD(.25,0,0,12), UD(0.625,0,1,-12), C3(0,.7,0), "Run script", 0)
 	runButton.MouseButton1Down:connect(function ()
-		if NewScript then
+		if NewScript() then
 		NewScript(str)
 		end
 	end)
 	runLocalButton = TextB(fr, "txt", UD(.25,0,0,12), UD(0.125,0,1,-12), C3(0,.7,0), "Run local", 0)
 	runLocalButton.MouseButton1Down:connect(function ()
-		if NewScript then
+		if NewLocalScript() then
 		NewLocalScript(str)
 		end
 	end)
